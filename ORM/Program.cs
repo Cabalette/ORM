@@ -13,11 +13,8 @@ namespace ORM
         {
             using (var context = new Test1Context())
             {
-                //select facid, extract(month from starttime) as month, sum(slots) as "Total Slots"
-                //    from cd.bookings
-                //    where extract(year from starttime) = 2012
-                //    group by facid, month
-                //order by facid, month;
+                var q = context.Set<Member>().FromSqlRaw("select * from SelectAllMembers").ToList();
+
                 var query = context.Bookings.Where(x => x.Starttime.Year == 2012).GroupBy(x => new
                 {
                     x.Facid,
