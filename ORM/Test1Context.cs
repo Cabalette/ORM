@@ -23,7 +23,7 @@ public partial class Test1Context : DbContext
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
-        optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Database=test1;Username=postgres;Password=123");
+        optionsBuilder.UseNpgsql("Host=localhost;Port=5432;Database=exercises;Username=postgres;Password=123");
         optionsBuilder.LogTo(message => System.Diagnostics.Debug.WriteLine(message));
     }
 

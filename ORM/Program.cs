@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore.Internal;
 using System.Collections.Generic;
 using System.Reflection.Metadata;
 using System.Xml.Linq;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 using static System.Reflection.Metadata.BlobBuilder;
 
 namespace ORM
@@ -13,50 +14,216 @@ namespace ORM
         {
             using (var context = new Test1Context())
             {
-                var q = context.Set<Member>().FromSqlRaw("select * from SelectAllMembers").ToList();
+                /*
 
-                var query = context.Bookings.Where(x => x.Starttime.Year == 2012).GroupBy(x => new
+                var LINQ=
+                var query=  
+                */
+                
+
+
+                int z = 0;
+
+                /*                                 *
+                 *                              *BASIC*
+                 *                                 *
+                var LINQ = context.Facilities.Select(x => x).ToList();
+                var query = (from fac in context.Facilities select fac).ToList();
+
+                var LINQ=context.Facilities.Select(x => new {x.Name,x.Membercost}).ToList();
+                var query=(from fac in context.Facilities
+                           select new
+                           {
+                               a=fac.Name,
+                               b=fac.Membercost
+                           }).ToList();
+
+                var LINQ=context.Facilities.Select(x=>x).Where(x=>x.Membercost>0).ToList();
+                var query = (from fac in context.Facilities
+                             where fac.Membercost > 0
+                             select fac).ToList();
+
+                var LINQ = context.Facilities.Select(x => new { x.Facid, x.Name, x.Membercost, x.Monthlymaintenance }).
+                           Where(x => x.Membercost > 0 && x.Membercost < x.Monthlymaintenance / 50).ToList();
+                var query = (from fac in context.Facilities
+                             where fac.Membercost > 0 && fac.Membercost < fac.Monthlymaintenance / 50
+                             select new
+                             {
+                                 id = fac.Facid,
+                                 name = fac.Name,
+                                 cost = fac.Membercost,
+                                 month = fac.Monthlymaintenance
+                             }).ToList();
+
+                var LINQ = context.Facilities.Select(x => x).Where(x => EF.Functions.Like(x.Name, "%Tennis%")).ToList();
+                var query=(from fac in context.Facilities
+                           where EF.Functions.Like(fac.Name, "%Tennis%")
+                           select fac).ToList();
+
+                var LINQ = context.Facilities.Select(x => x).Where(x => cache.Contains(x.Facid)).ToList();
+                var query = (from fac in context.Facilities
+                             let cache = new HashSet<int> { 1, 5 }
+                             where cache.Contains(fac.Facid)
+                             select fac).ToList();
+
+                var LINQ = context.Facilities.Select(x => new
                 {
-                    x.Facid,
-                    x.Starttime.Month
-                }).Select(x => new
+                    name = x.Name,
+                    cost = x.Monthlymaintenance > 100 ? "expensive" : "cheap"
+                }).ToList();
+                var query = (from fac in context.Facilities
+                             let t = new
+                             {
+                                 name = fac.Name,
+                                 cost = fac.Monthlymaintenance > 100 ? "expensive" : "cheap"
+                             }
+                             select t).ToList();
+
+                var LINQ = context.Members.Select(x => new { x.Memid, x.Surname, x.Firstname, x.Joindate }).
+                            Where(x => x.Joindate > new DateTime(2012, 9, 1)).ToList();
+                var query = (from mem in context.Members
+                             where mem.Joindate > new DateTime(2012, 9, 1)
+                             select new
+                             {
+                                 mem.Memid,
+                                 mem.Surname,
+                                 mem.Firstname,
+                                 mem.Joindate
+                             }
+                             ).ToList();
+
+                var LINQ = context.Members.Select(x => x.Surname).Distinct().OrderBy(x => x).Take(10).ToList();
+                var query = (from mem in context.Members
+                             select mem.Surname).Distinct().OrderBy(x => x).Take(10).ToList();
+
+                var LINQ = context.Members.Select(x => x.Surname).ToList().Union(context.Facilities.Select(x => x.Name)).ToList();
+                var query = (from mem in context.Members select mem.Surname).ToList().Union(
+                             from fac in context.Facilities select fac.Name).ToList();
+
+                var LINQ = context.Members.Select(x => x.Joindate).Max();
+                var query = (from mem in context.Members
+                             select mem.Joindate).Max();
+
+                var LINQ = context.Members.Select(x => new { x.Firstname, x.Surname, x.Joindate }).
+                                           Where(x=>x.Joindate==context.Members.Max(x=>x.Joindate)).ToList();
+                var query = (from mem in context.Members
+                             where mem.Joindate == context.Members.Max(x => x.Joindate)
+                             select new
+                             {
+                                 mem.Firstname,
+                                 mem.Surname,
+                                 mem.Joindate
+                             }).ToList();
+
+
+
+                                                       *
+                                                    *JOINS*
+                                                       *
+                
+                var LINQ = context.Bookings.Join(context.Members.Where(x => x.Firstname == "David" && x.Surname == "Farrell"), b => b.Memid, m => m.Memid, (b, m) => b.Starttime).ToList();
+                var query = (from b in context.Bookings
+                             join m in context.Members on b.Memid equals m.Memid
+                             where m.Firstname == "David" && m.Surname == "Farrell"
+                             select b.Starttime
+                             ).ToList();
+
+                var LINQ = context.Bookings.Where(x => x.Starttime >= new DateTime(2012, 09, 21) && x.Starttime < new DateTime(2012, 09, 22)).
+                           Join(context.Facilities.Where(x => EF.Functions.Like(x.Name, "Tennis%")), b => b.Facid, f => f.Facid, (b, f) => new
+                           {
+                               b.Starttime,
+                               f.Name
+                           }).ToList();
+                var query = (from b in context.Bookings where b.Starttime >= new DateTime(2012, 09, 21) && b.Starttime < new DateTime(2012, 09, 22)
+                             join f in context.Facilities on b.Facid equals f.Facid where EF.Functions.Like(f.Name, "Tennis%")
+                             select new
+                             {
+                                 b.Starttime,
+                                 f.Name
+                             }).ToList();
+
+                var LINQ = context.Members.Where(x =>
+                                   context.Members.Where(x => x.Recommendedby != null).Select(x => x.Recommendedby).Contains(x.Memid)).
+                                   Select(x => new { x.Firstname, x.Surname }).OrderBy(x => x.Surname).ThenBy(x => x.Firstname).ToList();
+                var query = (from m in context.Members
+                             where (from qq in context.Members
+                                    where qq.Recommendedby != null
+                                    select qq.Recommendedby).Contains(m.Memid)
+                             orderby m.Surname, m.Firstname
+                             select new
+                             {
+                                 m.Firstname,
+                                 m.Surname
+                             }).ToList();
+
+                var LINQ = context.Members.
+                    GroupJoin(context.Members, mem => mem.Recommendedby, rec => rec.Memid, (mem, rec) => new { mem, rec }).
+                    SelectMany(x => x.rec.DefaultIfEmpty(), (mem, rec) => new
+                    {
+                        memfname = mem.mem.Firstname,
+                        memsname = mem.mem.Surname,
+                        recfname = rec.Firstname,
+                        recsname = rec.Surname
+                    }).OrderBy(x => x.memsname).ThenBy(x => x.memfname).ToList();
+                var query = (from mem in context.Members
+                             join rec in context.Members on mem.Recommendedby equals rec.Memid
+                             into groupped
+                             from r in groupped.DefaultIfEmpty()
+                             select new
+                             {
+                                 memfname = mem.Firstname,
+                                 memsname = mem.Surname,
+                                 recfname = r.Firstname,
+                                 recsname = r.Surname
+                             }
+                           ).OrderBy(x => x.memsname).ThenBy(x => x.memfname).ToList();
+
+                var LINQ = context.Members.Join(context.Bookings, x => x.Memid, x => x.Memid, (x, e) => new
                 {
-                    x.Key.Facid,
-                    x.Key.Month,
-                    slots = x.Sum(e => e.Slots)
-                }).OrderBy(x => x.Facid).ThenBy(x => x.Month).ToList();
+                    Member = x.Firstname + " " + x.Surname,
+                    e.Facid
+                }).Join(context.Facilities, x => x.Facid, x => x.Facid, (x, e) => new { x.Member, e.Name }).
+                Where(x => EF.Functions.Like(x.Name, "Tennis%")).Distinct().OrderBy(x => x.Member).ThenBy(x => x.Name).ToList();
+                var query = (from mem in context.Members
+                             join book in context.Bookings on mem.Memid equals book.Memid
+                             join fac in context.Facilities on book.Facid equals fac.Facid where EF.Functions.Like(fac.Name, "Tennis%")
+                             select new
+                             {
+                                 Member = mem.Firstname + " " + mem.Surname,
+                                 fac.Name
+                             }).Distinct().OrderBy(x => x.Member).ThenBy(x => x.Name).ToList();
+                */
 
-                var query2 = (from bks in context.Bookings
-                              where bks.Starttime.Year == 2012
-                              group bks by new
-                              {
-                                  bks.Facid,
-                                  bks.Starttime.Month
-                              } into bks1
-                              select new
-                              {
-                                  bks1.Key.Facid,
-                                  bks1.Key.Month,
-                                  slots = bks1.Sum(x => x.Slots)
-                              } into bks2
-                              orderby bks2.Facid, bks2.Month select bks2).ToList();
+                /*
+                //var q = context.Set<Member>().FromSqlRaw("select * from members").ToList();
 
-                int some = 1;
+                //var query = context.Bookings.Where(x => x.Starttime.Year == 2012).GroupBy(x => new
+                //{
+                //    x.Facid,
+                //    x.Starttime.Month
+                //}).Select(x => new
+                //{
+                //    x.Key.Facid,
+                //    x.Key.Month,
+                //    slots = x.Sum(e => e.Slots)
+                //}).OrderBy(x => x.Facid).ThenBy(x => x.Month).ToList();
 
-                foreach (var stuff in query)
-                {
-                    Console.WriteLine($"" +
-                 $"facid - {stuff.Facid} " +
-                $"revenue - {stuff.Month}" +
-                    $" - {stuff.slots}" +
-                //     $"- {stuff.cost}" +
-                //$" \t firstname {stuff.recsname}" +
-                //$"- joindate - {stuff.joindate}" +
-                //$"\t - start - {stuff.start} \t " +
-                //$"- name - {stuff.name} \t" +
-                //$"- monthlymaintenance - {stuff.monthlymaintenance}" +
-                " ");
-                }
+                //var query2 = (from bks in context.Bookings
+                //              where bks.Starttime.Year == 2012
+                //              group bks by new
+                //              {
+                //                  bks.Facid,
+                //                  bks.Starttime.Month
+                //              } into bks1
+                //              select new
+                //              {
+                //                  bks1.Key.Facid,
+                //                  bks1.Key.Month,
+                //                  slots = bks1.Sum(x => x.Slots)
+                //              } into bks2
+                //              orderby bks2.Facid, bks2.Month
+                //              select bks2).ToList();
+                */
             }
         }
     }
